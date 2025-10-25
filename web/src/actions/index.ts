@@ -58,9 +58,16 @@ export async function getTestResult(
   }
 }
 
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth';
+
 export async function saveTest(testResult: DbResult) {
   'use server';
   try {
+    const session = await getServerSession(authOptions);
+    if (session) {
+      testResult.userId = session.user.id;
+    }
     const db = await connectToDatabase();
     const collection = db.collection(collectionName);
     const result = await collection.insertOne(testResult);

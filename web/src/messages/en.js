@@ -215,6 +215,11 @@ inventory is from <i>Johnson's (2014) 120-item IPIP NEO-PI-R</i>.`,
     shareTwitter: 'Share on Twitter',
     copiedLink: 'Copied link',
     shareResults: 'Share your results!'
+  },
+  user: {
+    login: 'Login',
+    logout: 'Logout',
+    profile: 'Profile'
   }
 };
 
