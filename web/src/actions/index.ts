@@ -27,25 +27,39 @@ export async function getTestResult(
 ): Promise<Report | undefined> {
   'use server';
   try {
-    const query = { _id: new ObjectId(id) };
+    const sessionId = new ObjectId(id);
     const db = await connectToDatabase();
-    const collection = db.collection(collectionName);
-    const report = await collection.findOne(query);
-    if (!report) {
+    const testSessionsCollection = db.collection('test_sessions');
+    const testSession = await testSessionsCollection.findOne({ _id: sessionId });
+
+    if (!testSession) {
       console.error(`The test results with id ${id} are not found!`);
       throw new B5Error({
         name: 'NotFoundError',
         message: `The test results with id ${id} is not found in the database!`
       });
     }
+
+    const facetScoresCollection = db.collection('facet_scores');
+    const facetScoresCursor = facetScoresCollection.find({ sessionId });
+    const facetScores = await facetScoresCursor.toArray();
+
+    const scores = {};
+    for (const facetScore of facetScores) {
+      if (!scores[facetScore.domain]) {
+        scores[facetScore.domain] = {};
+      }
+      scores[facetScore.domain][facetScore.facet] = facetScore.score;
+    }
+
     const selectedLanguage =
       language ||
-      (!!resultLanguages.find((l) => l.id == report.lang) ? report.lang : 'en');
-    const scores = calculateScore({ answers: report.answers });
+      (!!resultLanguages.find((l) => l.id == testSession.lang) ? testSession.lang : 'en');
     const results = generateResult({ lang: selectedLanguage, scores });
+
     return {
-      id: report._id.toString(),
-      timestamp: report.dateStamp,
+      id: testSession._id.toString(),
+      timestamp: testSession.createdAt.getTime(),
       availableLanguages: resultLanguages,
       language: selectedLanguage,
       results
@@ -69,9 +83,28 @@ export async function saveTest(testResult: DbResult) {
       testResult.userId = session.user.id;
     }
     const db = await connectToDatabase();
-    const collection = db.collection(collectionName);
-    const result = await collection.insertOne(testResult);
-    return { id: result.insertedId.toString() };
+    const testSessionsCollection = db.collection('test_sessions');
+    const { answers, ...testSessionData } = testResult;
+    const result = await testSessionsCollection.insertOne({ ...testSessionData, answers, createdAt: new Date() });
+    const sessionId = result.insertedId;
+
+    const scores = calculateScore({ answers: testResult.answers });
+    const facetScoresCollection = db.collection('facet_scores');
+    const facetScores = [];
+    for (const domain in scores) {
+      for (const facet in scores[domain]) {
+        facetScores.push({
+          sessionId,
+          userId: testResult.userId,
+          domain,
+          facet,
+          score: scores[domain][facet]
+        });
+      }
+    }
+    await facetScoresCollection.insertMany(facetScores);
+
+    return { id: sessionId.toString() };
   } catch (error) {
     console.error(error);
     throw new B5Error({

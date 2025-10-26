@@ -5,11 +5,11 @@ import { Report } from '@/actions';
 
 async function getReports(userId: string): Promise<Report[]> {
   const db = await connectToDatabase();
-  const collection = db.collection(process.env.DB_COLLECTION || 'results');
-  const reports = await collection.find({ userId }).toArray();
+  const collection = db.collection('test_sessions');
+  const reports = await collection.find({ userId }).sort({ createdAt: -1 }).toArray();
   return reports.map((report) => ({
     id: report._id.toString(),
-    timestamp: report.dateStamp,
+    timestamp: report.createdAt.getTime(),
     availableLanguages: [],
     language: report.lang,
     results: []
