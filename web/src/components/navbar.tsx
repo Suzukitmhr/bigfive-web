@@ -21,6 +21,7 @@ import clsx from 'clsx';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { TwitterIcon, GithubIcon, Logo } from '@/components/icons';
 import { Link as NextLink } from '../navigation';
+import AuthButton from '@/components/auth-button';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -94,6 +95,9 @@ export const Navbar = ({ navItems, navMenuItems }: NavbarProps) => {
         </NavbarItem>
         <NavbarItem>
           <LocaleSwitcherFull />
+        </NavbarItem>
+        <NavbarItem>
+          <AuthButton />
         </NavbarItem>
       </NavbarContent>
 

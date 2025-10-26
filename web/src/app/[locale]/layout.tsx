@@ -9,7 +9,7 @@ import { ThemeProviderProps } from 'next-themes/dist/types';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { basePath, getNavItems, locales, siteConfig } from '@/config/site';
 import { unstable_setRequestLocale } from 'next-intl/server';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, getMessages } from 'next-intl/server';
 import { Analytics } from '@vercel/analytics/react';
 import useTextDirection from '@/hooks/use-text-direction';
 import Script from 'next/script';
@@ -92,6 +92,7 @@ export default async function RootLayout({
   const navItems = await getNavItems({ locale, linkType: 'navItems' });
   const navMenuItems = await getNavItems({ locale, linkType: 'navMenuItems' });
   const footerLinks = await getNavItems({ locale, linkType: 'footerLinks' });
+  const messages = await getMessages();
 
   return (
     <html lang={locale} dir={direction} suppressHydrationWarning>
@@ -103,6 +104,7 @@ export default async function RootLayout({
         )}
       >
         <Providers
+          messages={messages}
           themeProps={
             { attribute: 'class', defaultTheme: 'light' } as ThemeProviderProps
           }
