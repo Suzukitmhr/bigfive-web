@@ -19,6 +19,7 @@ export type Report = {
   availableLanguages: Language[];
   language: string;
   results: Domain[];
+  analysis?: string;
 };
 
 export async function getTestResult(
@@ -56,13 +57,16 @@ export async function getTestResult(
       language ||
       (!!resultLanguages.find((l) => l.id == testSession.lang) ? testSession.lang : 'en');
     const results = generateResult({ lang: selectedLanguage, scores });
+    const analysisCollection = db.collection('personality_analysis');
+    const analysisDoc = await analysisCollection.findOne({ sessionId });
 
     return {
       id: testSession._id.toString(),
       timestamp: testSession.createdAt.getTime(),
       availableLanguages: resultLanguages,
       language: selectedLanguage,
-      results
+      results,
+      analysis: analysisDoc?.analysis
     };
   } catch (error) {
     if (error instanceof B5Error) {
@@ -74,6 +78,7 @@ export async function getTestResult(
 
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { getServerSession } from 'next-auth';
+import { generateAnalysis } from '@/lib/gemini';
 
 export async function saveTest(testResult: DbResult) {
   'use server';
@@ -103,6 +108,19 @@ export async function saveTest(testResult: DbResult) {
       }
     }
     await facetScoresCollection.insertMany(facetScores);
+
+    const lang = testResult.lang || 'en';
+    const resultsForAnalysis = generateResult({ lang, scores });
+    const prompt = `Based on the following Big Five personality scores, provide a detailed analysis of the individual's character, strengths, and weaknesses. The results are: ${JSON.stringify(resultsForAnalysis)}`;
+    const analysisText = await generateAnalysis(prompt);
+
+    const analysisCollection = db.collection('personality_analysis');
+    await analysisCollection.insertOne({
+      sessionId,
+      userId: testResult.userId,
+      analysis: analysisText,
+      createdAt: new Date()
+    });
 
     return { id: sessionId.toString() };
   } catch (error) {

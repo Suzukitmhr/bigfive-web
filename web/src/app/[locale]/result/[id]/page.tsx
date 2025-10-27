@@ -101,6 +101,12 @@ const Results = ({ report, showExpanded }: ResultsProps) => {
         <h1 className={title()}>{t('theBigFive')}</h1>
       </div>
       <BarChart max={120} results={report.results} />
+      {report.analysis && (
+        <div className="mt-10">
+          <h2 className={title({ size: 'sm' })}>Personality Analysis</h2>
+          <p className="mt-4">{report.analysis}</p>
+        </div>
+      )}
       <DomainTabs
         results={report.results}
         showExpanded={!!showExpanded}
