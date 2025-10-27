@@ -28,6 +28,7 @@ import {
   ModalHeader,
   useDisclosure
 } from '@nextui-org/modal';
+import { analyzeTeam } from '@/actions/analyze-team';
 
 interface CompareProps {
   addPersonText: string;
@@ -68,6 +69,8 @@ export const ComparePeople = ({
   const [editId, setEditId] = useState<string>('');
   const [editIndex, setEditIndex] = useState<number>();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [analysis, setAnalysis] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const isInvalidId = React.useMemo(() => {
     if (id === '') return false;
@@ -112,6 +115,14 @@ export const ComparePeople = ({
     setEditId(item.id);
     setEditIndex(rows.findIndex(({ id }) => id === item.id));
     onOpen();
+  }
+
+  async function handleAnalyzeTeam() {
+    setIsLoading(true);
+    const ids = rows.map(row => row.id);
+    const result = await analyzeTeam(ids);
+    setAnalysis(result);
+    setIsLoading(false);
   }
 
   function editPerson(onClose: () => void) {
@@ -216,7 +227,22 @@ export const ComparePeople = ({
         >
           {comparePeopleText}
         </Button>
+        <Button
+          color='secondary'
+          className='mt-4'
+          isDisabled={rows.length < 2}
+          onClick={handleAnalyzeTeam}
+          isLoading={isLoading}
+        >
+          Analyze Team
+        </Button>
       </div>
+      {analysis && (
+        <div className="mt-10">
+          <h2 className="text-2xl font-bold">Team Analysis</h2>
+          <p className="mt-4">{analysis}</p>
+        </div>
+      )}
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} placement='center'>
         <ModalContent>
           {(onClose) => (
